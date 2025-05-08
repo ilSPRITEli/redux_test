@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String    @unique
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          Role      @default(USER)
+  boards        Board[]   @relation("BoardMembers")
+  ownedBoards   Board[]   @relation("BoardOwner")
+  tasks         Task[]    @relation("TaskAssignee")
+  notifications Notification[]
+}
+
+model Board {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  ownerId     String
+  owner       User      @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     User[]    @relation("BoardMembers")
+  columns     Column[]
+}
+
+model Column {
+  id        String    @id @default(cuid())
+  title     String
+  order     Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  boardId   String
+  board     Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  columnId    String
+  column      Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  tags        Tag[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  tasks     Task[]
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  createdAt   DateTime  @default(now())
+  read        Boolean   @default(false)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+  VIEWER
+}
